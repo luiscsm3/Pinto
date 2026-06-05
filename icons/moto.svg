@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 40" fill="currentColor">
+  <!-- rear wheel -->
+  <circle cx="14" cy="30" r="9" fill="none" stroke="currentColor" stroke-width="3.5"/>
+  <circle cx="14" cy="30" r="3" fill="currentColor"/>
+  <!-- front wheel -->
+  <circle cx="52" cy="30" r="9" fill="none" stroke="currentColor" stroke-width="3.5"/>
+  <circle cx="52" cy="30" r="3" fill="currentColor"/>
+  <!-- frame -->
+  <line x1="14" y1="30" x2="36" y2="14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+  <line x1="36" y1="14" x2="52" y2="30" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+  <line x1="36" y1="14" x2="28" y2="30" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- seat / tank -->
+  <path d="M24 14 Q30 8 38 10 L40 14 L24 14Z" rx="2"/>
+  <!-- handlebar -->
+  <line x1="48" y1="14" x2="56" y2="12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="56" y1="12" x2="56" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <!-- exhaust -->
+  <path d="M14 30 Q10 28 8 32" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+</svg>

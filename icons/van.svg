@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 32" fill="currentColor">
+  <!-- body -->
+  <rect x="2" y="10" width="60" height="16" rx="3"/>
+  <!-- cab -->
+  <path d="M30 10 L30 4 Q30 2 32 2 L52 2 Q56 2 58 6 L60 10 Z"/>
+  <!-- windshield -->
+  <path d="M32 4 L32 9 L56 9 L54 4 Q53 2.5 51 2.5 L34 2.5 Q32.5 2.5 32 4Z" fill="#1a1a1a" opacity="0.5"/>
+  <!-- wheels -->
+  <circle cx="14" cy="26" r="5" fill="#111"/>
+  <circle cx="14" cy="26" r="2.5" fill="#444"/>
+  <circle cx="48" cy="26" r="5" fill="#111"/>
+  <circle cx="48" cy="26" r="2.5" fill="#444"/>
+  <!-- side window -->
+  <rect x="4" y="12" width="10" height="6" rx="1" fill="#1a1a1a" opacity="0.4"/>
+  <rect x="16" y="12" width="10" height="6" rx="1" fill="#1a1a1a" opacity="0.4"/>
+</svg>

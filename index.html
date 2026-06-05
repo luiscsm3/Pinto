@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestão de Carrinhas</title>
+<title>Veículos do Pinto</title>
 <link rel="icon" type="image/png" href="35.png">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="Carrinhas.css">
@@ -17,7 +17,7 @@
       <h1>Veículos</h1>
     </div>
     <div class="header-actions">
-      <button class="btn-theme" id="btn-theme" onclick="toggleTheme()">🌙 Escuro</button>
+      <button class="btn-theme" id="btn-theme" onclick="toggleTheme()">Dark</button>
       <button class="btn-ghost" onclick="abrirCalculadora()">Calculadora</button>
       <button class="btn-primary" onclick="abrirModalPerfil()">+ Novo perfil</button>
     </div>
@@ -25,7 +25,7 @@
 
   <div id="perfis-grid" class="perfis-grid"></div>
   <div id="perfis-empty" class="empty-state" style="display:none;">
-    <div class="empty-icon">🚐</div>
+    <div class="empty-icon"><img src="icons/van.svg" style="width:56px;height:56px;opacity:.3;" /></div>
     <p>Nenhum perfil criado ainda.</p>
   </div>
 </div>
@@ -41,7 +41,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <button class="btn-theme" id="btn-theme-carrinhas" onclick="toggleTheme()">🌙 Escuro</button>
+      <button class="btn-theme" id="btn-theme-carrinhas" onclick="toggleTheme()">Dark</button>
       <input class="search-input" id="search-carrinhas" type="text" placeholder="🔍 Pesquisar matrícula" oninput="filtrarCarrinhas(this.value)" />
       <button class="btn-ghost btn-view-toggle" id="btn-view-toggle" onclick="toggleViewMode()" title="Alternar vista">⊞</button>
       <button class="btn-ghost" onclick="exportarDados()">⬇ Exportar</button>
@@ -58,10 +58,10 @@
     </select>
     <select class="filtro-select" id="filtro-tipo" onchange="aplicarFiltros()">
       <option value="">Todos os tipos</option>
-      <option value="Carrinha">🚐 Carrinha</option>
-      <option value="Carro">🚗 Carro</option>
-      <option value="Mota">🏍️ Mota</option>
-      <option value="Barco">⛵ Barco</option>
+      <option value="Carrinha">Carrinha</option>
+      <option value="Carro">Carro</option>
+      <option value="Mota">Mota</option>
+      <option value="Barco">Barco</option>
     </select>
     <select class="filtro-select" id="filtro-carga" onchange="aplicarFiltros()">
       <option value="">Toda a carga</option>
@@ -115,8 +115,8 @@
             <label>Produto</label>
             <select id="c-droga" onchange="calcDrogas()">
               <option value="weed">Weed</option>
-              <option value="cocaina">Cocaína</option>
               <option value="opio">Ópio</option>
+              <option value="cocaina">Cocaína</option>
               <option value="meta">Meta</option>
               <option value="petroleo">Petróleo</option>
             </select>
@@ -129,9 +129,9 @@
         <div class="calc-field">
           <label>Tipo</label>
           <select id="c-tipo" onchange="calcDrogas()">
+            <option value="org">Organização</option>
+            <option value="contratados">Contratados</option>
             <option value="civil">Civil</option>
-            <option value="limpo">Contratado Limpo</option>
-            <option value="sujo">Contratado Sujo</option>
           </select>
         </div>
       </div>
@@ -148,21 +148,20 @@
           <div class="calc-field">
             <label>Arma</label>
             <select id="c-arma" onchange="calcArmas()">
-              <option value="hk">HK</option>
-              <option value="deagle">Deagle</option>
-              <option value="microuzi">Micro Uzi</option>
-              <option value="tec9">Tec 9</option>
-              <option value="mpx">Mpx</option>
-              <option value="tommygun">Tommy Gun</option>
-              <option value="minidraco">Mini Draco</option>
-              <option value="shotgun">Shotgun Tática</option>
-              <option value="p90">P90</option>
-              <option value="qbz">Qbz</option>
-              <option value="ak47">Ak-47</option>
               <option value="ak12">Ak-12</option>
-              <option value="g36">G36</option>
+              <option value="ak47">Ak-47</option>
               <option value="g2">G2</option>
+              <option value="qbz">QBZ</option>
+              <option value="p90">P90</option>
+              <option value="shotgun">Shotgun Tática</option>
+              <option value="minidraco">Mini Drako</option>
+              <option value="g36">G36</option>
+              <option value="tommygun">Tommy Gun</option>
+              <option value="mpx">Sig MPX</option>
+              <option value="tec9">Tec 9</option>
+              <option value="microuzi">Micro Uzi</option>
               <option value="spaz12">Spaz 12</option>
+              <option value="deagle">Deagle</option>
             </select>
           </div>
           <div class="calc-field" style="max-width:100px;">
@@ -173,9 +172,9 @@
         <div class="calc-field">
           <label>Tipo</label>
           <select id="c-arma-tipo" onchange="calcArmas()">
+            <option value="org">Organização</option>
+            <option value="contratados">Contratados (Org +15%)</option>
             <option value="civil">Civil</option>
-            <option value="com_mat">Contratado com Materiais</option>
-            <option value="sem_mat">Contratado sem Materiais</option>
           </select>
         </div>
       </div>
@@ -193,14 +192,14 @@
             <label>Acessório</label>
             <select id="c-acessorio" onchange="calcAcessorios()">
               <option value="coletes">Coletes</option>
-              <option value="oxydona">Oxydona</option>
               <option value="carregador">Carregador Estendido</option>
-              <option value="mira_holo">Mira Holográfica</option>
-              <option value="mira">Mira</option>
+              <option value="mira_holo">Mira Holo</option>
               <option value="compensador">Compensador</option>
+              <option value="oxydona">Oxycodona</option>
+              <option value="mira">Mira</option>
               <option value="drone">Drone</option>
-              <option value="c4">C4</option>
               <option value="id_falso">ID Falso</option>
+              <option value="c4">C4</option>
             </select>
           </div>
           <div class="calc-field" style="max-width:100px;">
@@ -211,9 +210,9 @@
         <div class="calc-field">
           <label>Tipo</label>
           <select id="c-acessorio-tipo" onchange="calcAcessorios()">
+            <option value="org">Organização</option>
+            <option value="contratados">Contratados</option>
             <option value="civil">Civil</option>
-            <option value="com_mat">Contratado com Materiais</option>
-            <option value="sem_mat">Contratado sem Materiais</option>
           </select>
         </div>
       </div>
@@ -268,10 +267,10 @@
     <div class="field">
       <label>Tipo de Veículo</label>
       <select id="m-tipo-veiculo">
-        <option value="Carrinha">🚐 Carrinha</option>
-        <option value="Carro">🚗 Carro</option>
-        <option value="Mota">🏍️ Mota</option>
-        <option value="Barco">⛵ Barco</option>
+        <option value="Carrinha">Carrinha</option>
+        <option value="Carro">Carro</option>
+        <option value="Mota">Mota</option>
+        <option value="Barco">Barco</option>
       </select>
     </div>
     <div class="field">

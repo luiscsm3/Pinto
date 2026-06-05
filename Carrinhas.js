@@ -1,10 +1,10 @@
 const firebaseConfig = {
-  apiKey: "AIzaSyAbNKlWYSe1rIn1t5yFS8kgJlwWggn5eLQ",
-  authDomain: "sugestoes-f03d9.firebaseapp.com",
-  projectId: "sugestoes-f03d9",
-  storageBucket: "sugestoes-f03d9.firebasestorage.app",
-  messagingSenderId: "640972402801",
-  appId: "1:640972402801:web:c1aaf57020fb7e1f05abd0"
+  apiKey: "AIzaSyAALMY3i5A4radygCClrhDY2wkJpZb8wPY",
+  authDomain: "pinto10-ca658.firebaseapp.com",
+  projectId: "pinto10-ca658",
+  storageBucket: "pinto10-ca658.firebasestorage.app",
+  messagingSenderId: "36631918264",
+  appId: "1:36631918264:web:5d73be3a3cec4a09a2a64d"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -20,7 +20,7 @@ function toggleTheme() {
 }
 
 function updateThemeBtns(theme) {
-  const label = theme === 'light' ? '☀️ Light' : '🌙 Dark';
+  const label = theme === 'light' ? 'Light' : 'Dark';
   document.querySelectorAll('[id^="btn-theme"]').forEach(b => b.textContent = label);
 }
 
@@ -94,10 +94,10 @@ function renderPerfis(perfis) {
           : `<span>${p.nome.charAt(0).toUpperCase()}</span>`}
         <div class="perfil-avatar-overlay">✎</div>
       </div>
-      <div class="perfil-nome">${esc(p.nome)} <span class="perfil-lock">🔒</span></div>
+      <div class="perfil-nome">${esc(p.nome)}</div>
       <div class="perfil-card-footer">
-        <div class="perfil-info" id="info-${p.id}">— carrinhas</div>
-        <button class="perfil-senha-btn" onclick="event.stopPropagation(); abrirEditarPerfil('${p.id}','${esc(p.nome)}')" title="Alterar palavra-passe">🔑</button>
+        <div class="perfil-info" id="info-${p.id}">— veículos</div>
+        <button class="perfil-senha-btn" onclick="event.stopPropagation(); abrirEditarPerfil('${p.id}','${esc(p.nome)}')" title="Alterar palavra-passe">✎</button>
       </div>
     </div>
   `).join('');
@@ -208,14 +208,17 @@ function renderCarrinhas(carrinhas) {
   aplicarFiltros();
 }
 
+function tipoIcon(tipoVeiculo) {
+  const map = { 'Carro': 'car', 'Mota': 'moto', 'Barco': 'boat', 'Carrinha': 'van' };
+  const key = map[tipoVeiculo] || 'van';
+  return `<img src="icons/${key}.svg" class="veiculo-icon" alt="${tipoVeiculo || 'Carrinha'}" />`;
+}
+
 function renderCarrinhasInterno(carrinhas) {
   const emUso = carrinhas.filter(c => c.carga && c.carga !== 'Vazio').length;
-  const tipos = { '🚐': 0, '🚗': 0, '🏍️': 0, '⛵': 0 };
-  carrinhas.forEach(c => {
-    const icon = c.tipoVeiculo === 'Carro' ? '🚗' : c.tipoVeiculo === 'Mota' ? '🏍️' : c.tipoVeiculo === 'Barco' ? '⛵' : '🚐';
-    tipos[icon]++;
-  });
-  const tiposStr = Object.entries(tipos).filter(([,v]) => v > 0).map(([k,v]) => `${v}${k}`).join(' ');
+  const tipos = { 'Carrinha': 0, 'Carro': 0, 'Mota': 0, 'Barco': 0 };
+  carrinhas.forEach(c => { const t = c.tipoVeiculo || 'Carrinha'; if (tipos[t] !== undefined) tipos[t]++; });
+  const tiposStr = Object.entries(tipos).filter(([,v]) => v > 0).map(([k,v]) => `${v} ${k}`).join(' · ');
   document.getElementById('perfil-contador').textContent = `${emUso} / ${carrinhas.length} em uso  •  ${tiposStr}`;
 
   const grid = document.getElementById('carrinhas-grid');
@@ -262,7 +265,7 @@ function renderCarrinhasInterno(carrinhas) {
         : `<span class="carrinha-img-plus" onclick="abrirImgModal('${c.id}','')">+</span>`}
     </div>
     <div class="carrinha-matricula">
-      <span class="carrinha-tipo-icon">${c.tipoVeiculo === 'Carro' ? '🚗' : c.tipoVeiculo === 'Mota' ? '🏍️' : c.tipoVeiculo === 'Barco' ? '⛵' : '🚐'}</span>
+      <span class="carrinha-tipo-icon">${tipoIcon(c.tipoVeiculo)}</span>
       <span class="carrinha-matricula-text" onclick="editarCampoCard(event,'${c.id}','matricula','${esc(c.matricula || '')}')">${esc(c.matricula || '—')}</span>
     </div>
     <div class="carrinha-marca-inline" onclick="editarCampoCard(event,'${c.id}','marca','${esc(c.marca || '')}')">
@@ -342,7 +345,7 @@ function renderTabela(carrinhas, grid) {
                   ? `<img class="td-thumb" src="${esc(c.imagem)}" onclick="abrirLightbox('${esc(c.imagem)}')" />`
                   : `<button class="btn-add-img" onclick="abrirImgModal('${c.id}','')">+</button>`}
               </td>
-              <td style="font-size:16px;">${c.tipoVeiculo === 'Carro' ? '🚗' : c.tipoVeiculo === 'Mota' ? '🏍️' : c.tipoVeiculo === 'Barco' ? '⛵' : '🚐'}</td>
+              <td>${tipoIcon(c.tipoVeiculo)}</td>
               <td class="td-marca-edit"><span onclick="editarCampoCard(event,'${c.id}','marca','${esc(c.marca || '')}')">${esc(c.marca || '—')}</span></td>
               <td class="td-matricula"><span onclick="editarCampoCard(event,'${c.id}','matricula','${esc(c.matricula || '')}')">${esc(c.matricula || '—')}</span></td>
               <td>${selectInline(c.id, 'carga', c.carga, CARGA_OPTS, 'badge-carga', CARGA_CLASS)}</td>
@@ -1015,42 +1018,45 @@ function esc(str) {
 
 // ─── CALCULADORA ──────────────────────────────────────
 
+// org = preço de blip | contratados = civil × 1.05 | civil = staff
+// carrinha = quantidade por carrinha cheia
 const DROGAS = {
-  weed:    { nome: 'Weed',    civil: 860,  limpo: 938,  sujo: 964  },
-  cocaina: { nome: 'Cocaína', civil: 1485, limpo: 1664, sujo: 1714 },
-  opio:    { nome: 'Ópio',    civil: 1405, limpo: 1571, sujo: 1619 },
-  meta:    { nome: 'Meta',    civil: 1730, limpo: 1914, sujo: 1971 },
-  petroleo:{ nome: 'Petróleo',civil: 8250, limpo: 9221, sujo: 9531 },
+  weed:    { nome: 'Weed',     org: 1070,  contratados: 903,  civil: 860,  carrinha: 600 },
+  opio:    { nome: 'Ópio',     org: 1830,  contratados: 1475, civil: 1405, carrinha: 600 },
+  cocaina: { nome: 'Cocaína',  org: 1940,  contratados: 1559, civil: 1485, carrinha: 600 },
+  meta:    { nome: 'Meta',     org: 2210,  contratados: 1816, civil: 1730, carrinha: 600 },
+  petroleo:{ nome: 'Petróleo', org: 10730, contratados: 8662, civil: 8250, carrinha: 240 },
 };
 
+// org = preço de blip | contratados = org × 1.15 (c/ materiais) | civil = staff
 const ARMAS = {
-  hk:       { nome: 'HK',            civil: 95000,    com_mat: 78000,    sem_mat: 82500,    materiais: '2 aços' },
-  deagle:   { nome: 'Deagle',        civil: 225000,   com_mat: 165000,   sem_mat: 184250,   materiais: '3 aços' },
-  microuzi: { nome: 'Micro Uzi',     civil: 775000,   com_mat: 460000,   sem_mat: 587000,   materiais: '4 encomendas + 1 aço' },
-  tec9:     { nome: 'Tec 9',         civil: 825000,   com_mat: 525000,   sem_mat: 639500,   materiais: '4 encomendas + 1 aço' },
-  mpx:      { nome: 'Mpx',           civil: 875000,   com_mat: 625000,   sem_mat: 707250,   materiais: '5 encomendas + 1 aço' },
-  tommygun: { nome: 'Tommy Gun',     civil: 925000,   com_mat: 660000,   sem_mat: 747500,   materiais: '6 encomendas + 1 aço' },
-  minidraco:{ nome: 'Mini Draco',    civil: 1000000,  com_mat: 725000,   sem_mat: 809500,   materiais: '4 encomendas + 1 aço' },
-  shotgun:  { nome: 'Shotgun Tática',civil: 1000000,  com_mat: 725000,   sem_mat: 812000,   materiais: '5 encomendas + 2 aços' },
-  p90:      { nome: 'P90',           civil: 1050000,  com_mat: 790000,   sem_mat: 865000,   materiais: '6 encomendas + 1 aço' },
-  qbz:      { nome: 'Qbz',           civil: 1152000,  com_mat: 920000,   sem_mat: 972000,   materiais: '6 encomendas + 2 aços' },
-  ak47:     { nome: 'Ak-47',         civil: 1250000,  com_mat: 990000,   sem_mat: 1048500,  materiais: '6 encomendas + 2 aços' },
-  ak12:     { nome: 'Ak-12',         civil: 1600000,  com_mat: 1509000,  sem_mat: 1521000,  materiais: '6 aços' },
-  g36:      { nome: 'G36',           civil: 1000000,  com_mat: 725000,   sem_mat: 809500,   materiais: '4 encomendas + 1 aço' },
-  g2:       { nome: 'G2',            civil: 1200000,  com_mat: 955000,   sem_mat: 1009750,  materiais: '6 encomendas + 2 aços' },
-  spaz12:   { nome: 'Spaz 12',       civil: 650000,   com_mat: 565000,   sem_mat: 604000,   materiais: '4 aços' },
+  ak12:     { nome: 'Ak-12',        org: 1300000, contratados: 1495000, civil: 1600000, materiais: '6 aços' },
+  ak47:     { nome: 'Ak-47',        org: 750000,  contratados: 862500,  civil: 1125000, materiais: '6 enc + 2 aços' },
+  g2:       { nome: 'G2',           org: 725000,  contratados: 833750,  civil: 1200000, materiais: '6 enc + 2 aços' },
+  qbz:      { nome: 'QBZ',          org: 700000,  contratados: 805000,  civil: 1150000, materiais: '6 enc + 2 aços' },
+  p90:      { nome: 'P90',          org: 700000,  contratados: 805000,  civil: 1050000, materiais: '6 enc + 1 aço' },
+  shotgun:  { nome: 'Shotgun Tática',org: 550000, contratados: 632500,  civil: 1000000, materiais: '5 enc + 2 aços' },
+  minidraco:{ nome: 'Mini Drako',   org: 550000,  contratados: 632500,  civil: 1000000, materiais: '4 enc + 1 aço' },
+  g36:      { nome: 'G36',          org: 550000,  contratados: 632500,  civil: 1000000, materiais: '4 enc + 1 aço' },
+  tommygun: { nome: 'Tommy Gun',    org: 500000,  contratados: 575000,  civil: 925000,  materiais: '6 enc + 1 aço' },
+  mpx:      { nome: 'Sig MPX',      org: 475000,  contratados: 546250,  civil: 875000,  materiais: '5 enc + 1 aço' },
+  tec9:     { nome: 'Tec 9',        org: 400000,  contratados: 460000,  civil: 825000,  materiais: '4 enc + 1 aço' },
+  microuzi: { nome: 'Micro Uzi',    org: 350000,  contratados: 402500,  civil: 775000,  materiais: '4 enc + 1 aço' },
+  spaz12:   { nome: 'Spaz 12',      org: 500000,  contratados: 575000,  civil: 650000,  materiais: '4 aços' },
+  deagle:   { nome: 'Deagle',       org: 125000,  contratados: 143750,  civil: 225000,  materiais: '3 aços' },
 };
 
+// org = preço de blip | contratados = chefia | civil = staff
 const ACESSORIOS = {
-  coletes:    { nome: 'Coletes',             civil: 150000,   com_mat: 98000,    sem_mat: 114000,   materiais: '1 encomenda' },
-  oxydona:    { nome: 'Oxydona',             civil: 300000,   com_mat: 140000,   sem_mat: 154500,   materiais: '1 encomenda' },
-  carregador: { nome: 'Carregador Estendido',civil: 180000,   com_mat: 110000,   sem_mat: 126500,   materiais: '1 encomenda' },
-  mira_holo:  { nome: 'Mira Holográfica',    civil: 200000,   com_mat: 130000,   sem_mat: 151500,   materiais: '1 encomenda' },
-  mira:       { nome: 'Mira',                civil: 450000,   com_mat: 350000,   sem_mat: 376500,   materiais: '1 encomenda' },
-  compensador:{ nome: 'Compensador',         civil: 250000,   com_mat: 165000,   sem_mat: 189000,   materiais: '1 encomenda' },
-  drone:      { nome: 'Drone',               civil: 3500000,  com_mat: 2700000,  sem_mat: 2989000,  materiais: '1 encomenda' },
-  c4:         { nome: 'C4',                  civil: 50000,    com_mat: 39000,    sem_mat: 42500,    materiais: '1 encomenda' },
-  id_falso:   { nome: 'ID Falso',            civil: 200000,   com_mat: 170000,   sem_mat: 176500,   materiais: '1 encomenda' },
+  coletes:    { nome: 'Coletes',              org: 75000,   contratados: 125000,  civil: 150000  },
+  carregador: { nome: 'Carregador Estendido', org: 75000,   contratados: 125000,  civil: 180000  },
+  mira_holo:  { nome: 'Mira Holo',           org: 100000,  contratados: 150000,  civil: 200000  },
+  compensador:{ nome: 'Compensador',          org: 125000,  contratados: 220000,  civil: 250000  },
+  oxydona:    { nome: 'Oxycodona',            org: 150000,  contratados: 250000,  civil: 300000  },
+  mira:       { nome: 'Mira',                 org: 300000,  contratados: 400000,  civil: 450000  },
+  drone:      { nome: 'Drone',                org: 2250000, contratados: 3000000, civil: 3700000 },
+  id_falso:   { nome: 'ID Falso',             org: 150000,  contratados: 170000,  civil: 180000  },
+  c4:         { nome: 'C4',                   org: 35000,   contratados: 45000,   civil: 50000   },
 };
 
 function fmt(n) {
@@ -1127,9 +1133,11 @@ function calcDrogas() {
   const tipo = document.getElementById('c-tipo').value;
   const preco = droga[tipo];
   const total = preco * qtd;
-  const tipoLabel = { civil: 'Civil', limpo: 'Contratado Limpo', sujo: 'Contratado Sujo' }[tipo];
+  const tipoLabel = { org: 'Organização', contratados: 'Contratados', civil: 'Civil' }[tipo];
+  const totalCarrinha = preco * droga.carrinha;
   document.getElementById('calc-droga-total').textContent = fmt(total);
-  document.getElementById('calc-droga-detail').textContent = `${fmt(preco)} × ${qtd} unidade${qtd !== 1 ? 's' : ''} — ${tipoLabel}`;
+  document.getElementById('calc-droga-detail').textContent =
+    `${fmt(preco)} × ${qtd} unidade${qtd !== 1 ? 's' : ''} — ${tipoLabel}\nCarrinha cheia (${droga.carrinha}x): ${fmt(totalCarrinha)}`;
   salvarEstadoCalc();
 }
 
@@ -1144,10 +1152,10 @@ function calcArmas() {
   const qtd = Math.max(1, parseInt(document.getElementById('c-arma-qtd').value) || 1);
   const preco = arma[tipo];
   const total = preco * qtd;
-  const tipoLabel = { civil: 'Civil', com_mat: 'Contratado com Materiais', sem_mat: 'Contratado sem Materiais' }[tipo];
+  const tipoLabel = { org: 'Organização', contratados: 'Contratados (Org +15%)', civil: 'Civil' }[tipo];
   document.getElementById('calc-arma-total').textContent = fmt(total);
   let detalhe = `${fmt(preco)} × ${qtd} unidade${qtd !== 1 ? 's' : ''} — ${tipoLabel}`;
-  if (tipo === 'com_mat') detalhe += `\nMateriais necessários: ${multiplicarMateriais(arma.materiais, qtd)}`;
+  if (tipo === 'contratados') detalhe += `\nMateriais: ${multiplicarMateriais(arma.materiais, qtd)}`;
   document.getElementById('calc-arma-detail').textContent = detalhe;
   salvarEstadoCalc();
 }
@@ -1158,11 +1166,10 @@ function calcAcessorios() {
   const qtd = Math.max(1, parseInt(document.getElementById('c-acessorio-qtd').value) || 1);
   const preco = ac[tipo];
   const total = preco * qtd;
-  const tipoLabel = { civil: 'Civil', com_mat: 'Contratado com Materiais', sem_mat: 'Contratado sem Materiais' }[tipo];
+  const tipoLabel = { org: 'Organização', contratados: 'Contratados', civil: 'Civil' }[tipo];
   document.getElementById('calc-acessorio-total').textContent = fmt(total);
-  let detalhe = `${fmt(preco)} × ${qtd} unidade${qtd !== 1 ? 's' : ''} — ${tipoLabel}`;
-  if (tipo === 'com_mat') detalhe += `\nMateriais necessários: ${multiplicarMateriais(ac.materiais, qtd)}`;
-  document.getElementById('calc-acessorio-detail').textContent = detalhe;
+  document.getElementById('calc-acessorio-detail').textContent =
+    `${fmt(preco)} × ${qtd} unidade${qtd !== 1 ? 's' : ''} — ${tipoLabel}`;
   salvarEstadoCalc();
 }
 
