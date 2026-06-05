@@ -1155,7 +1155,7 @@ function calcArmas() {
   const tipoLabel = { org: 'Organização', contratados: 'Contratados (Org +15%)', civil: 'Civil' }[tipo];
   document.getElementById('calc-arma-total').textContent = fmt(total);
   let detalhe = `${fmt(preco)} × ${qtd} unidade${qtd !== 1 ? 's' : ''} — ${tipoLabel}`;
-  if (tipo === 'contratados') detalhe += `\nMateriais: ${multiplicarMateriais(arma.materiais, qtd)}`;
+  if (tipo === 'org' || tipo === 'contratados') detalhe += `\nMateriais: ${multiplicarMateriais(arma.materiais, qtd)}`;
   document.getElementById('calc-arma-detail').textContent = detalhe;
   salvarEstadoCalc();
 }
