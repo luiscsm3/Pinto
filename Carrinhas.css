@@ -725,15 +725,15 @@ td.td-img { width: 48px; text-align: center; padding: 6px 8px; }
 .calc-table td:first-child { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
 .calc-table td:not(:first-child) { font-weight: 700; text-align: right; }
 .calc-table th:not(:first-child) { text-align: right; }
-.ct-org  td { background: #1a0808; }
-.ct-cont td { background: #0f0f0a; }
+.ct-org  td { background: var(--surface2); }
+.ct-cont td { background: var(--surface2); }
 .ct-civil td { background: var(--surface); }
 .ct-org  td:not(:first-child) { color: var(--accent); }
 .ct-cont td:not(:first-child) { color: var(--yellow); }
 .ct-civil td:not(:first-child) { color: var(--text); }
 .ct-org  td:first-child,
 .ct-cont td:first-child,
-.ct-civil td:first-child { color: var(--text-muted); background: var(--surface2); }
+.ct-civil td:first-child { color: var(--text-muted); background: var(--surface3); }
 
 /* ── MOBILE ─────────────────────────────────────────── */
 @media (max-width: 900px) {
