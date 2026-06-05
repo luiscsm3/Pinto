@@ -36,6 +36,12 @@ const db = firebase.firestore();
 let perfilAtual = null;
 let unsubCarrinhas = null;
 let viewMode = localStorage.getItem('viewMode') || 'cards';
+let _todosPerfis = [];
+
+async function hashSenha(s) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
 
 function toggleViewMode() {
   viewMode = viewMode === 'cards' ? 'table' : 'cards';
@@ -76,8 +82,8 @@ const STATUS_OPTS = ['Vazio','Processado','Não Processado'];
 // ─── PERFIS ───────────────────────────────────────────
 
 db.collection('perfis').orderBy('nome').onSnapshot(snap => {
-  const perfis = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  renderPerfis(perfis);
+  _todosPerfis = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderPerfis(_todosPerfis);
 });
 
 function renderPerfis(perfis) {
@@ -102,13 +108,21 @@ function renderPerfis(perfis) {
     </div>
   `).join('');
 
-  // Carregar contadores
+  // Carregar contadores + dashboard
   perfis.forEach(p => {
     db.collection('perfis').doc(p.id).collection('carrinhas').get().then(snap => {
-      const total = snap.size;
-      const emUso = snap.docs.filter(d => d.data().carga && d.data().carga !== 'Vazio').length;
+      const docs = snap.docs.map(d => d.data());
+      const total = docs.length;
+      const emUso = docs.filter(d => d.carga && d.carga !== 'Vazio').length;
+      const proc = docs.filter(d => d.status === 'Processado').length;
+      const nproc = docs.filter(d => d.status === 'Não Processado').length;
       const el = document.getElementById(`info-${p.id}`);
-      if (el) el.textContent = `${emUso} / ${total} em uso`;
+      if (!el) return;
+      el.innerHTML = total === 0
+        ? '<span>Sem veículos</span>'
+        : `<span class="ds-uso">${emUso}/${total} em uso</span>
+           ${proc  ? `<span class="ds-proc">${proc} proc.</span>` : ''}
+           ${nproc ? `<span class="ds-nproc">${nproc} n/proc.</span>` : ''}`;
     });
   });
 }
@@ -118,7 +132,8 @@ async function criarPerfil() {
   if (!nome) { toast('Indica um nome.'); return; }
   const senha = document.getElementById('m-perfil-senha').value;
   if (!senha) { toast('Indica uma palavra-passe.'); return; }
-  const dados = { nome, senha, criadoEm: new Date().toISOString() };
+  const senhaHash = await hashSenha(senha);
+  const dados = { nome, senha: senhaHash, criadoEm: new Date().toISOString() };
   await db.collection('perfis').add(dados);
   fecharModal('modal-perfil');
   document.getElementById('m-perfil-nome').value = '';
@@ -133,8 +148,9 @@ async function eliminarPerfil(id, nome) {
   document.getElementById('modal-senha').classList.add('open');
   setTimeout(() => document.getElementById('m-senha-input').focus(), 100);
   _senhaCallback = async (input) => {
+    const inputHash = await hashSenha(input);
     const snap = await db.collection('perfis').doc(id).get();
-    if (snap.data().senha !== input) return false;
+    if (snap.data().senha !== inputHash) return false;
     fecharModal('modal-senha');
     if (!confirm(`Eliminar o perfil "${nome}" e todas as suas carrinhas?`)) return true;
     const carrinhas = await db.collection('perfis').doc(id).collection('carrinhas').get();
@@ -156,8 +172,9 @@ function tentarAbrirPerfil(id, nome) {
   document.getElementById('modal-senha').classList.add('open');
   setTimeout(() => document.getElementById('m-senha-input').focus(), 100);
   _senhaCallback = async (input) => {
+    const inputHash = await hashSenha(input);
     const snap = await db.collection('perfis').doc(id).get();
-    if (snap.data().senha === input) {
+    if (snap.data().senha === inputHash) {
       fecharModal('modal-senha');
       abrirPerfil(id, nome);
       return true;
@@ -279,6 +296,16 @@ function renderCarrinhasInterno(carrinhas) {
       <textarea class="carrinha-input" placeholder="Estado..." onchange="updateCarrinha('${c.id}','estado',this.value)" oninput="autoResize(this)">${esc(c.estado || '')}</textarea>
       <textarea class="carrinha-input" placeholder="Notas..." onchange="updateCarrinha('${c.id}','notas',this.value)" oninput="autoResize(this)">${esc(c.notas || '')}</textarea>
     </div>
+    ${(c.historico?.length) ? `
+    <div class="carrinha-historico" id="hist-${c.id}" style="display:none;">
+      ${c.historico.slice(0,8).map(h => `
+        <div class="hist-item">
+          <span class="hist-campo">${h.campo}</span>
+          <span class="hist-vals">${esc(h.de||'—')} → ${esc(h.para||'—')}</span>
+          <span class="hist-ts">${new Date(h.ts).toLocaleDateString('pt-PT')}</span>
+        </div>`).join('')}
+    </div>
+    <button class="carrinha-btn-hist" onclick="toggleHistorico('${c.id}')">Histórico (${c.historico.length})</button>` : ''}
     <button class="carrinha-btn-del" onclick="eliminarCarrinha('${c.id}')">Remover</button>
   </div>`;
 
@@ -400,7 +427,21 @@ async function adicionarCarrinha() {
 
 async function updateCarrinha(id, field, value) {
   mostrarSync('A guardar...');
-  await db.collection('perfis').doc(perfilAtual).collection('carrinhas').doc(id).update({ [field]: value });
+  const ref = db.collection('perfis').doc(perfilAtual).collection('carrinhas').doc(id);
+  const update = { [field]: value };
+
+  if (field === 'carga' || field === 'status') {
+    const atual = _todasCarrinhas.find(c => c.id === id);
+    const anterior = atual?.[field] || '';
+    if (anterior !== value) {
+      const historico = [...(atual?.historico || [])];
+      historico.unshift({ campo: field, de: anterior, para: value, ts: new Date().toISOString() });
+      if (historico.length > 15) historico.length = 15;
+      update.historico = historico;
+    }
+  }
+
+  await ref.update(update);
   mostrarSync('✓ Guardado', true);
 }
 
@@ -421,8 +462,9 @@ function abrirImgPerfil(id) {
   document.getElementById('modal-senha').classList.add('open');
   setTimeout(() => document.getElementById('m-senha-input').focus(), 100);
   _senhaCallback = async (input) => {
+    const inputHash = await hashSenha(input);
     const snap = await db.collection('perfis').doc(id).get();
-    if (snap.data().senha !== input) return false;
+    if (snap.data().senha !== inputHash) return false;
     fecharModal('modal-senha');
     _imgPerfilId = id;
     _imgCarrinhaId = null;
@@ -553,6 +595,13 @@ async function removerImagem() {
   _imgDataAtual = '';
   fecharModal('modal-img');
 }
+
+function toggleHistorico(id) {
+  const el = document.getElementById(`hist-${id}`);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+window.toggleHistorico = toggleHistorico;
 
 window.abrirImgModal = abrirImgModal;
 window.abrirImgPerfil = abrirImgPerfil;
@@ -780,6 +829,65 @@ function mostrarSync(msg, sucesso = false) {
 }
 window.mostrarSync = mostrarSync;
 
+// ─── PESQUISA GLOBAL ─────────────────────────────────
+
+let _searchTimer = null;
+
+function pesquisaGlobalInput(query) {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => pesquisaGlobal(query), 300);
+}
+
+async function pesquisaGlobal(query) {
+  const q = query.trim().toLowerCase();
+  const container = document.getElementById('perfis-search-results');
+  const grid = document.getElementById('perfis-grid');
+  const empty = document.getElementById('perfis-empty');
+
+  if (!q) {
+    container.style.display = 'none';
+    grid.style.display = '';
+    empty.style.display = _todosPerfis.length ? 'none' : '';
+    return;
+  }
+
+  container.innerHTML = '<div class="search-loading">A pesquisar...</div>';
+  container.style.display = '';
+  grid.style.display = 'none';
+  empty.style.display = 'none';
+
+  const resultados = [];
+  for (const p of _todosPerfis) {
+    const snap = await db.collection('perfis').doc(p.id).collection('carrinhas').get();
+    snap.docs.forEach(d => {
+      const v = d.data();
+      if ((v.matricula || '').toLowerCase().includes(q) || (v.marca || '').toLowerCase().includes(q)) {
+        resultados.push({ ...v, id: d.id, perfilId: p.id, perfilNome: p.nome });
+      }
+    });
+  }
+
+  if (!resultados.length) {
+    container.innerHTML = `<div class="empty-state"><p>Nenhum veículo encontrado para "${esc(query)}".</p></div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="sr-header">${resultados.length} veículo${resultados.length !== 1 ? 's' : ''} encontrado${resultados.length !== 1 ? 's' : ''}</div>
+    <div class="sr-list">
+      ${resultados.map(v => `
+        <div class="sr-item" onclick="tentarAbrirPerfil('${v.perfilId}','${esc(v.perfilNome)}')">
+          <span class="sr-perfil">${esc(v.perfilNome)}</span>
+          <span class="sr-matricula">${esc(v.matricula || '—')}</span>
+          <span class="sr-marca">${esc(v.marca || '—')}</span>
+          <span class="badge-carga ${CARGA_CLASS[v.carga] || 'carga-vazio'}">${esc(v.carga || '—')}</span>
+          <span class="badge-status ${STATUS_CLASS[v.status] || 'status-vazio'}">${esc(v.status || '—')}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+window.pesquisaGlobalInput = pesquisaGlobalInput;
+
 // ─── PESQUISA & FILTROS ───────────────────────────────
 
 let _todasCarrinhas = [];
@@ -871,8 +979,9 @@ function abrirEditarPerfil(id, nome) {
   document.getElementById('modal-senha').classList.add('open');
   setTimeout(() => document.getElementById('m-senha-input').focus(), 100);
   _senhaCallback = async (input) => {
+    const inputHash = await hashSenha(input);
     const snap = await db.collection('perfis').doc(id).get();
-    if (snap.data().senha !== input) return false;
+    if (snap.data().senha !== inputHash) return false;
     fecharModal('modal-senha');
     _editarPerfilId = id;
     document.getElementById('ep-nome').value = snap.data().nome;
@@ -888,7 +997,7 @@ async function guardarEdicaoPerfil() {
   const senha = document.getElementById('ep-senha').value;
   if (!nome) { toast('Indica um nome.'); return; }
   const dados = { nome };
-  if (senha) dados.senha = senha;
+  if (senha) dados.senha = await hashSenha(senha);
   await db.collection('perfis').doc(_editarPerfilId).update(dados);
   fecharModal('modal-editar-perfil');
   toast('Perfil atualizado.');
@@ -1070,13 +1179,10 @@ function salvarEstadoCalc() {
     tab:          document.querySelector('.calc-tab.active')?.id?.replace('tab-','') || 'drogas',
     droga:        document.getElementById('c-droga')?.value,
     qtd:          document.getElementById('c-qtd')?.value,
-    tipo:         document.getElementById('c-tipo')?.value,
     arma:         document.getElementById('c-arma')?.value,
     armaQtd:      document.getElementById('c-arma-qtd')?.value,
-    armaTipo:     document.getElementById('c-arma-tipo')?.value,
     acessorio:    document.getElementById('c-acessorio')?.value,
     acessorioQtd: document.getElementById('c-acessorio-qtd')?.value,
-    acessorioTipo:document.getElementById('c-acessorio-tipo')?.value,
   }));
 }
 
@@ -1084,15 +1190,12 @@ function restaurarEstadoCalc() {
   try {
     const s = JSON.parse(localStorage.getItem('calc'));
     if (!s) return;
-    if (s.droga)         document.getElementById('c-droga').value          = s.droga;
-    if (s.qtd)           document.getElementById('c-qtd').value            = s.qtd;
-    if (s.tipo)          document.getElementById('c-tipo').value           = s.tipo;
-    if (s.arma)          document.getElementById('c-arma').value           = s.arma;
-    if (s.armaQtd)       document.getElementById('c-arma-qtd').value       = s.armaQtd;
-    if (s.armaTipo)      document.getElementById('c-arma-tipo').value      = s.armaTipo;
-    if (s.acessorio)     document.getElementById('c-acessorio').value      = s.acessorio;
-    if (s.acessorioQtd)  document.getElementById('c-acessorio-qtd').value  = s.acessorioQtd;
-    if (s.acessorioTipo) document.getElementById('c-acessorio-tipo').value = s.acessorioTipo;
+    if (s.droga)         document.getElementById('c-droga').value         = s.droga;
+    if (s.qtd)           document.getElementById('c-qtd').value           = s.qtd;
+    if (s.arma)          document.getElementById('c-arma').value          = s.arma;
+    if (s.armaQtd)       document.getElementById('c-arma-qtd').value      = s.armaQtd;
+    if (s.acessorio)     document.getElementById('c-acessorio').value     = s.acessorio;
+    if (s.acessorioQtd)  document.getElementById('c-acessorio-qtd').value = s.acessorioQtd;
     if (s.tab)           calcTab(s.tab);
   } catch(e) {}
 }
@@ -1130,14 +1233,16 @@ function calcTab(tab) {
 function calcDrogas() {
   const droga = DROGAS[document.getElementById('c-droga').value];
   const qtd = Math.max(1, parseInt(document.getElementById('c-qtd').value) || 1);
-  const tipo = document.getElementById('c-tipo').value;
-  const preco = droga[tipo];
-  const total = preco * qtd;
-  const tipoLabel = { org: 'Organização', contratados: 'Contratados', civil: 'Civil' }[tipo];
-  const totalCarrinha = preco * droga.carrinha;
-  document.getElementById('calc-droga-total').textContent = fmt(total);
-  document.getElementById('calc-droga-detail').textContent =
-    `${fmt(preco)} × ${qtd} unidade${qtd !== 1 ? 's' : ''} — ${tipoLabel}\nCarrinha cheia (${droga.carrinha}x): ${fmt(totalCarrinha)}`;
+  const colTotal = qtd > 1 ? `<th>Total (${qtd}x)</th>` : '';
+  document.getElementById('calc-droga-comparison').innerHTML = `
+    <table class="calc-table">
+      <thead><tr><th>Tipo</th><th>Unitário</th>${colTotal}<th>Carrinha (${droga.carrinha}x)</th></tr></thead>
+      <tbody>
+        <tr class="ct-org"><td>Organização</td><td>${fmt(droga.org)}</td>${qtd>1?`<td>${fmt(droga.org*qtd)}</td>`:''}<td>${fmt(droga.org*droga.carrinha)}</td></tr>
+        <tr class="ct-cont"><td>Contratados</td><td>${fmt(droga.contratados)}</td>${qtd>1?`<td>${fmt(droga.contratados*qtd)}</td>`:''}<td>${fmt(droga.contratados*droga.carrinha)}</td></tr>
+        <tr class="ct-civil"><td>Civil</td><td>${fmt(droga.civil)}</td>${qtd>1?`<td>${fmt(droga.civil*qtd)}</td>`:''}<td>${fmt(droga.civil*droga.carrinha)}</td></tr>
+      </tbody>
+    </table>`;
   salvarEstadoCalc();
 }
 
@@ -1148,28 +1253,34 @@ function multiplicarMateriais(materiaisStr, qtd) {
 
 function calcArmas() {
   const arma = ARMAS[document.getElementById('c-arma').value];
-  const tipo = document.getElementById('c-arma-tipo').value;
   const qtd = Math.max(1, parseInt(document.getElementById('c-arma-qtd').value) || 1);
-  const preco = arma[tipo];
-  const total = preco * qtd;
-  const tipoLabel = { org: 'Organização', contratados: 'Contratados (Org +15%)', civil: 'Civil' }[tipo];
-  document.getElementById('calc-arma-total').textContent = fmt(total);
-  let detalhe = `${fmt(preco)} × ${qtd} unidade${qtd !== 1 ? 's' : ''} — ${tipoLabel}`;
-  if (tipo === 'org' || tipo === 'contratados') detalhe += `\nMateriais: ${multiplicarMateriais(arma.materiais, qtd)}`;
-  document.getElementById('calc-arma-detail').textContent = detalhe;
+  const colTotal = qtd > 1 ? `<th>Total (${qtd}x)</th>` : '';
+  document.getElementById('calc-arma-comparison').innerHTML = `
+    <div class="calc-mat">Materiais: ${multiplicarMateriais(arma.materiais, qtd)}</div>
+    <table class="calc-table">
+      <thead><tr><th>Tipo</th><th>Unitário</th>${colTotal}</tr></thead>
+      <tbody>
+        <tr class="ct-org"><td>Organização</td><td>${fmt(arma.org)}</td>${qtd>1?`<td>${fmt(arma.org*qtd)}</td>`:''}</tr>
+        <tr class="ct-cont"><td>Contratados (+15%)</td><td>${fmt(arma.contratados)}</td>${qtd>1?`<td>${fmt(arma.contratados*qtd)}</td>`:''}</tr>
+        <tr class="ct-civil"><td>Civil</td><td>${fmt(arma.civil)}</td>${qtd>1?`<td>${fmt(arma.civil*qtd)}</td>`:''}</tr>
+      </tbody>
+    </table>`;
   salvarEstadoCalc();
 }
 
 function calcAcessorios() {
   const ac = ACESSORIOS[document.getElementById('c-acessorio').value];
-  const tipo = document.getElementById('c-acessorio-tipo').value;
   const qtd = Math.max(1, parseInt(document.getElementById('c-acessorio-qtd').value) || 1);
-  const preco = ac[tipo];
-  const total = preco * qtd;
-  const tipoLabel = { org: 'Organização', contratados: 'Contratados', civil: 'Civil' }[tipo];
-  document.getElementById('calc-acessorio-total').textContent = fmt(total);
-  document.getElementById('calc-acessorio-detail').textContent =
-    `${fmt(preco)} × ${qtd} unidade${qtd !== 1 ? 's' : ''} — ${tipoLabel}`;
+  const colTotal = qtd > 1 ? `<th>Total (${qtd}x)</th>` : '';
+  document.getElementById('calc-acessorio-comparison').innerHTML = `
+    <table class="calc-table">
+      <thead><tr><th>Tipo</th><th>Unitário</th>${colTotal}</tr></thead>
+      <tbody>
+        <tr class="ct-org"><td>Organização</td><td>${fmt(ac.org)}</td>${qtd>1?`<td>${fmt(ac.org*qtd)}</td>`:''}</tr>
+        <tr class="ct-cont"><td>Contratados</td><td>${fmt(ac.contratados)}</td>${qtd>1?`<td>${fmt(ac.contratados*qtd)}</td>`:''}</tr>
+        <tr class="ct-civil"><td>Civil</td><td>${fmt(ac.civil)}</td>${qtd>1?`<td>${fmt(ac.civil*qtd)}</td>`:''}</tr>
+      </tbody>
+    </table>`;
   salvarEstadoCalc();
 }
 
